@@ -22,7 +22,9 @@ public class ReactionEntry {
     ReactionId reactionId;
 
     @Column("account_id")
-    UUID brandId;     // The brand id used when reacting to the content
+    UUID accountId;     // The brand id used when reacting to the content
+    @Column("block_accounts")
+    UUID blockAccounts; // Marker so that Apps can recognize that this reactor is blocking the requester
 
     String version;     // the version of the content being reacted to, in case the content changes drastically
     @CassandraType(type = CassandraType.Name.TIMESTAMP)

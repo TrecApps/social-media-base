@@ -3,7 +3,6 @@ package com.trecapps.sm.content.repos;
 import com.trecapps.sm.content.models.ReactionEntry;
 import com.trecapps.sm.content.models.ReactionId;
 import com.trecapps.sm.content.models.ReactionTypeCount;
-import org.springframework.data.cassandra.repository.AllowFiltering;
 import org.springframework.data.cassandra.repository.Query;
 import org.springframework.data.cassandra.repository.ReactiveCassandraRepository;
 import org.springframework.data.domain.Pageable;
@@ -11,23 +10,20 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @Repository
 public interface ReactionRepo extends ReactiveCassandraRepository<ReactionEntry, ReactionId> {
 
 //    @AllowFiltering
     @Query(value = "select * from reaction_entry where content_id = :contentId")
-    Flux<ReactionEntry> findTypesByContentId(String contentId);
+    Flux<ReactionEntry> findTypesByContentId(UUID contentId);
 
 //    @Query(value = "select new com.trecapps.sm.content.models.ReactionTypeCount(re.type, count(re.type) )" +
 //            " from reactionEntry re where content_id = :contentId group by re.type")
 //    Flux<ReactionTypeCount> findCountByContentId(String contentId);
 
-    default Mono<List<ReactionTypeCount>> findCountByContentId(String contentId) {
+    default Mono<List<ReactionTypeCount>> findCountByContentId(UUID contentId) {
         return findTypesByContentId(contentId)
                 .map((ReactionEntry entity) -> {
                     return entity.getReactionId() == null ? "" : entity.getReactionId().getType();
@@ -51,15 +47,15 @@ public interface ReactionRepo extends ReactiveCassandraRepository<ReactionEntry,
     }
 
     @Query(value = "select * from reaction_entry where content_id = :contentId")
-    Flux<ReactionEntry> findByContentId(String contentId, Pageable page);
+    Flux<ReactionEntry> findByContentId(UUID contentId, Pageable page);
 
     @Query(value = "select * from reaction_entry where content_id = :contentId and type = :type")
-    Flux<ReactionEntry> findByContentIdAndType(String contentId, String type, Pageable page);
+    Flux<ReactionEntry> findByContentIdAndType(UUID contentId, String type, Pageable page);
 
     @Query(value = "select * from reaction_entry where user_id = :userId")
-    Flux<ReactionEntry> findByUserId(String userId, Pageable page);
+    Flux<ReactionEntry> findByUserId(UUID userId, Pageable page);
 
     @Query(value = "select * from reaction_entry where content_id = :contentId and user_id = :userId")
-    Mono<ReactionEntry> findByContentAndUserId(String contentId, String userId);
+    Mono<ReactionEntry> findByContentAndUserId(UUID contentId, UUID userId);
 
 }

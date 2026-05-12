@@ -9,16 +9,16 @@ import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 
-public interface ContentRepo extends ReactiveMongoRepository<Posting, String> {
-    @Query("{\"$or\": [{'profileOwner': ?0}, {'profilePoster': ?0}], 'parent' :{ $exists: false }}")
-    Flux<Posting> getContentByProfileId(@Param("profileId") String profileId, Pageable page);
+public interface ContentRepo extends ReactiveMongoRepository<Posting, UUID> {
+    @Query("{\"$or\": [{'ownerId': ?0}, {'posterId': ?0}], 'parent' :{ $exists: false }}")
+    Flux<Posting> getContentByProfileId(@Param("profileId") UUID profileId, Pageable page);
 
     @Query("{'moduleId': ?0}")
-    Flux<Posting> getContentByModuleId(@Param("moduleId") String moduleId, Pageable page);
+    Flux<Posting> getContentByModuleId(@Param("moduleId") UUID moduleId, Pageable page);
 
     @Query("{'parent': ?0}")
-    Flux<Posting> getContentByParent(@Param("parentId") String parentId, Pageable page);
+    Flux<Posting> getContentByParent(@Param("parentId") UUID parentId, Pageable page);
 
-    @Query("{'moduleId': ?0, $or: ['profilePoster': ?1, 'profileOwner': ?1], 'parent': null}")
-    Flux<Posting> getContentByModuleAndProfileId(@Param("moduleId") String moduleId, @Param("profileId") String profileID, Pageable page);
+    @Query("{'moduleId': ?0, $or: ['posterId': ?1, 'ownerId': ?1], 'parent': null}")
+    Flux<Posting> getContentByModuleAndProfileId(@Param("moduleId") UUID moduleId, @Param("profileId") UUID profileID, Pageable page);
 }
