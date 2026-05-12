@@ -5,11 +5,13 @@ import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 
+import java.util.UUID;
+
 @PrimaryKeyClass
 @Data
 public class ConnectionLink {
     @PrimaryKeyColumn(type = PrimaryKeyType.PARTITIONED, ordinal = 0)
-    String follower;
+    UUID follower;
     @PrimaryKeyColumn(type = PrimaryKeyType.CLUSTERED, ordinal = 1)
-    String followee;
+    UUID followee;
 }

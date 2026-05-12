@@ -8,14 +8,15 @@ import org.springframework.data.cassandra.core.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.core.mapping.PrimaryKeyColumn;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @PrimaryKeyClass
 public class MediaEventId {
 
     @PrimaryKeyColumn(type = PrimaryKeyType.PARTITIONED)
-    @Column("profile_id")
-    String profile;
+    @Column("account_id")
+    String account;
 
 
     @PrimaryKeyColumn(type = PrimaryKeyType.CLUSTERED, ordinal = 1)
@@ -23,7 +24,7 @@ public class MediaEventId {
 
     @PrimaryKeyColumn(type = PrimaryKeyType.CLUSTERED, ordinal = 2)
     @Column("random_id")
-    String randomId;
+    UUID randomId;
 
     @PrimaryKeyColumn(type = PrimaryKeyType.CLUSTERED, ordinal = 3)
     @CassandraType(type = CassandraType.Name.TIMESTAMP)
