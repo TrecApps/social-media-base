@@ -1,6 +1,5 @@
 package com.trecapps.sm.content.models;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -48,9 +47,10 @@ public class Posting {
 
     UUID posterId;          // Account ID of the poster
     UUID userAccountId;   // User Account that posted it
+    UUID blockerAccount; // Account ID of the poster (used to hide from anyone the poster has blocked)
 
     UUID ownerId;       // Populated only if poster directs it to another profile
-    UUID blockerAccount; // Account ID of the poster (used to hide from anyone the poster has blocked)
+    UUID ownerBlocker; // Provided if the ownerId is set, similar purpose to "blockerAccount"
 
     UUID moduleId;        // If part of a group, which group this belongs to
     //@JsonFormat(pattern="dd/MM/yyyy HH:mm:ss Z")

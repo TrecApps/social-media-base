@@ -7,18 +7,27 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.data.repository.query.Param;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface ContentRepo extends ReactiveMongoRepository<Posting, UUID> {
-    @Query("{\"$or\": [{'ownerId': ?0}, {'posterId': ?0}], 'parent' :{ $exists: false }}")
-    Flux<Posting> getContentByProfileId(@Param("profileId") UUID profileId, Pageable page);
+    @Query("{\"$or\": [{'ownerId': ?0}, {'posterId': ?0}], 'parent' :{ $exists: false }," +
+            "'blockerAccount': { \"$nin\": ?1 }," +
+            "'ownerBlocker': { \"$nin\": ?1 }}")
+    Flux<Posting> getContentByProfileId(@Param("profileId") UUID profileId, List<UUID> blockers, Pageable page);
 
-    @Query("{'moduleId': ?0}")
-    Flux<Posting> getContentByModuleId(@Param("moduleId") UUID moduleId, Pageable page);
+    @Query("{'moduleId': ?0," +
+            "'blockerAccount': { \"$nin\": ?1 }," +
+            "'ownerBlocker': { \"$nin\": ?1 }}")
+    Flux<Posting> getContentByModuleId(@Param("moduleId") UUID moduleId, List<UUID> blockers, Pageable page);
 
-    @Query("{'parent': ?0}")
-    Flux<Posting> getContentByParent(@Param("parentId") UUID parentId, Pageable page);
+    @Query("{'parent': ?0," +
+            "'blockerAccount': { \"$nin\": ?1 }," +
+            "'ownerBlocker': { \"$nin\": ?1 }}")
+    Flux<Posting> getContentByParent(@Param("parentId") UUID parentId, List<UUID> blockers, Pageable page);
 
-    @Query("{'moduleId': ?0, $or: ['posterId': ?1, 'ownerId': ?1], 'parent': null}")
-    Flux<Posting> getContentByModuleAndProfileId(@Param("moduleId") UUID moduleId, @Param("profileId") UUID profileID, Pageable page);
+    @Query("{'moduleId': ?0, $or: ['posterId': ?1, 'ownerId': ?1], 'parent': null," +
+            "'blockerAccount': { \"$nin\": ?2 }," +
+            "'ownerBlocker': { \"$nin\": ?2 }}")
+    Flux<Posting> getContentByModuleAndProfileId(@Param("moduleId") UUID moduleId, @Param("profileId") UUID profileID, List<UUID> blockers, Pageable page);
 }

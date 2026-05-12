@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface ProfileRepoMongo extends ReactiveMongoRepository<Profile, UUID> {
 
-    @Query(value = "{\"$or\": [{ 'title' : { '$regex' : '?0', '$options' : 'i'}}, { 'aboutMeShort' : { '$regex' : '?0', '$options' : 'i'}}]}")
+    @Query(value = "{\"$or\": [{ 'title' : { '$regex' : '?0', '$options' : 'i'}}, { 'aboutMeShort' : { '$regex' : '?0', '$options' : 'i'}}], " +
+            "'blockerId': { \"$nin\": ?1 }}")
     Flux<Profile> findProfileByQuery(String query, List<UUID> blockers, Pageable page);
 }
