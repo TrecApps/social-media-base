@@ -9,14 +9,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 
+import java.util.UUID;
+
 @Repository
 public interface ConnectionRepo extends ReactiveCassandraRepository<ConnectionEntry, ConnectionLink> {
 
     @Query("select * from connection_entry where follower = :follower ALLOW FILTERING")
     @AllowFiltering
-    Flux<ConnectionEntry> findByFollower(String follower, Pageable page);
+    Flux<ConnectionEntry> findByFollower(UUID follower, Pageable page);
 
     @Query("select * from connection_entry where followee = :followee ALLOW FILTERING")
     @AllowFiltering
-    Flux<ConnectionEntry> findByFollowee(String followee, Pageable page);
+    Flux<ConnectionEntry> findByFollowee(UUID followee, Pageable page);
 }
