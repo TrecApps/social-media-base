@@ -1,9 +1,6 @@
-package com.trecapps.sm.profile.service;
+package com.trecapps.sm.profile.services;
 
-import com.trecapps.auth.common.models.TcBrands;
-import com.trecapps.auth.common.models.TcUser;
-import com.trecapps.sm.common.functionality.ObjectResponseException;
-import com.trecapps.sm.common.functionality.ProfileFunctionality;
+import com.trecapps.sm.common.models.ObjectResponseException;
 import com.trecapps.sm.common.models.ResponseObj;
 import com.trecapps.sm.profile.dto.Favorite;
 import com.trecapps.sm.profile.dto.PostProfile;
@@ -14,16 +11,21 @@ import com.trecapps.sm.profile.models.Profile;
 import com.trecapps.sm.profile.models.Skill;
 import com.trecapps.sm.profile.models.WorkExpHolder;
 import com.trecapps.sm.profile.repos.ProfileRepoMongo;
+import com.trecauth.common.model.Account;
+import com.trecauth.common.model.AccountList;
+import com.trecauth.common.model.AccountType;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MongoProfileService implements ProfileService {
@@ -36,38 +38,40 @@ public class MongoProfileService implements ProfileService {
 
 
     @Override
-    public Mono<ResponseObj> createProfile(TcUser user, @Nullable TcBrands brand, PostProfile post) {
+    public Mono<ResponseObj> createProfile(AccountList list, PostProfile post) {
 
         return profileRepo
-                .findById(ProfileFunctionality.getProfileId(user, brand))
+                .findById(list.getCurrentAccount().getId())
                 .doOnNext((Profile profile) -> {throw new ObjectResponseException(HttpStatus.CONFLICT, "Profile already exists!");})
                 .thenReturn(new Profile())
                 .flatMap((Profile profile) -> {
-                    profile.setId(ProfileFunctionality.getProfileId(user, brand));
+                    profile.setId(list.getCurrentAccount().getId());
                     profile.setAboutMe(post.getAboutMe());
                     profile.setAboutMeShort(post.getAboutMeShort());
                     profile.setPronouns(post.getPronouns());
                     profile.setPronounVisibility(post.getPronounVisibility());
 
-                    profile.setTitle(brand == null ? user.getDisplayName() : brand.getName());
+                    profile.setTitle(list.getCurrentAccount().getDisplayName());
+                    profile.setProfileType(list.getCurrentAccount().getType());
 
                     return profileRepo.save(profile);
                 })
-                .map((Profile profile) -> ResponseObj.getInstanceCREATED("Success", profile.getId()));
+                .map((Profile profile) -> ResponseObj.getInstanceCREATED("Success", profile.getId().toString()));
     }
 
     @Override
-    public Mono<List<ProfileSearchResult>> searchProfiles(String userId, String query, int page, int size) {
+    public Mono<List<ProfileSearchResult>> searchProfiles(AccountList list, String query, int page, int size) {
 
-        return Mono.just(userId)
-                .flatMap((String user) -> {
-
-                    // ToDo - look up block table for any profiles blocking this user
-
-
-                    return Mono.just(new ArrayList<String> ());
+        return Mono.just(list)
+                .map((AccountList user) -> {
+                    return user
+                            .getBrandAccounts()
+                            .stream()
+                            .filter((Account account) -> account.getType() == AccountType.BLOCK)
+                            .map(Account::getCreator)
+                            .toList();
                 })
-                .flatMap((List<String> blockers) -> {
+                .flatMap((List<UUID> blockers) -> {
 
                     return profileRepo.findProfileByQuery(query, blockers, PageRequest.of(page, size))
                             .map((Profile profile) -> {
@@ -83,16 +87,17 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<Profile> getProfile(TcUser userId, @Nullable String brandId, String profileId) {
-        return Mono.just(userId.getId())
-                .flatMap((String user) -> {
-
-                    // ToDo - look up block table for any profiles blocking this user
-
-
-                    return Mono.just(new ArrayList<String> ());
+    public Mono<Profile> getProfile(AccountList list, UUID profileId) {
+        return Mono.just(list)
+                .map((AccountList user) -> {
+                    return user
+                            .getBrandAccounts()
+                            .stream()
+                            .filter((Account account) -> account.getType() == AccountType.BLOCK)
+                            .map(Account::getCreator)
+                            .toList();
                 })
-                .doOnNext((List<String> blockers) -> {
+                .doOnNext((List<UUID> blockers) -> {
                     if(blockers.contains(profileId)){
 
                         // ToDo - set up mechanism where target profile can be alerted about this search (whether a threshold is established or not)
@@ -103,25 +108,34 @@ public class MongoProfileService implements ProfileService {
 
                     }
                 })
-                .flatMap((List<String> b) -> {
+                .flatMap((List<UUID> b) -> {
                     return profileRepo.findById(profileId);
                 })
                 .doOnNext((Profile profile) -> {
                     // If requester is retrieving own profile, allow everything to be returned
-                    if(profile.getId().equals(ProfileFunctionality.getProfileId(userId.getId(), brandId)))
+                    if(profile.getId().equals(list.getCurrentAccount().getId()))
                         return;
 
                     // prepare to filter data
 
                     // ToDo - get information about connections between requester and profile
 
-                    profile.filterData(supportRecruiters && userId.getAuthRoles().contains("RECRUITER"), false, false);
+                    profile.filterData(
+                            supportRecruiters &&
+                                    list
+                                            .getAuthorities()
+                                            .stream()
+                                            .map(GrantedAuthority::getAuthority)
+                                            .toList()
+                                            .contains("RECRUITER"),
+                            false,
+                            false);
                 });
     }
 
     @Override
-    public Mono<ResponseObj> updateFavorites(String userId, @Nullable String brandId, List<Favorite> favorites) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> updateFavorites(AccountList list, List<Favorite> favorites) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .doOnNext((Profile profile) -> {
                     // ToDo - inspect favorites
 
@@ -138,8 +152,8 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> setEducation(String userId, @Nullable String brandId, @Nullable String eduId, Education education) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> setEducation(AccountList list, @Nullable String eduId, Education education) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .doOnNext((Profile profile) -> {
                     // ToDo - inspect education
 
@@ -172,8 +186,8 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> setWorkExperience(String userId, @Nullable String brandId, @Nullable String perspective, WorkExpHolder experience) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> setWorkExperience(AccountList list, @Nullable String perspective, WorkExpHolder experience) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .doOnNext((Profile profile) -> {
                     // ToDo - inspect education
 
@@ -207,9 +221,9 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> setSkill(String userId, @Nullable String brandId, String name, SkillPost skillPost) {
+    public Mono<ResponseObj> setSkill(AccountList list, String name, SkillPost skillPost) {
 
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .flatMap((Profile profile) -> {
                     byte level = skillPost.getLevel();
                     if(level < 1 || level > 10)
@@ -243,8 +257,8 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> removeEducation(String userId, @Nullable String brandId, String eduId) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> removeEducation(AccountList list, String eduId) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .flatMap((Profile profile) -> {
                     List<Education> educations = profile.getEducation();
                     try{
@@ -267,8 +281,8 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> removeWorkExperience(String userId, @Nullable String brandId, String perspective) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> removeWorkExperience(AccountList list, String perspective) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .flatMap((Profile profile) -> {
                     List<WorkExpHolder> experiences = profile.getWorkExperiences();
 
@@ -296,8 +310,8 @@ public class MongoProfileService implements ProfileService {
     }
 
     @Override
-    public Mono<ResponseObj> removeSkill(String userId, @Nullable String brandId, List<String> names) {
-        return profileRepo.findById(ProfileFunctionality.getProfileId(userId, brandId))
+    public Mono<ResponseObj> removeSkill(AccountList list, List<String> names) {
+        return profileRepo.findById(list.getCurrentAccount().getId())
                 .flatMap((Profile profile) -> {
                     List<Skill> skills = profile.getSkills();
                     int removed = 0;
