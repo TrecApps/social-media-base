@@ -1,4 +1,4 @@
-package com.trecapps.sm.content.services;
+package com.trecapps.sm.profile.services;
 
 import com.trecapps.sm.common.models.ResponseObj;
 import com.trecapps.sm.profile.dto.PostFilterRequest;
