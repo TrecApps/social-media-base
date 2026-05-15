@@ -1,12 +1,10 @@
 package com.trecapps.sm.content.services;
 
-import com.trecapps.auth.common.models.TcBrands;
-import com.trecapps.auth.common.models.TcUser;
-import com.trecapps.sm.common.functionality.ObjectResponseException;
-import com.trecapps.sm.common.functionality.ProfileFunctionality;
+
+import com.trecapps.sm.common.models.ObjectResponseException;
 import com.trecapps.sm.common.models.ReactionStats;
 import com.trecapps.sm.common.models.ResponseObj;
-import com.trecapps.sm.common.models.SocialMediaEvent;
+//import com.trecapps.sm.common.models.SocialMediaEvent;
 import com.trecapps.sm.common.models.SocialMediaEventType;
 import com.trecapps.sm.content.dto.ContentReactionEntry;
 import com.trecapps.sm.content.dto.ProfileReactionEntry;
@@ -15,8 +13,10 @@ import com.trecapps.sm.content.models.Posting;
 import com.trecapps.sm.content.models.ReactionEntry;
 import com.trecapps.sm.content.models.ReactionId;
 import com.trecapps.sm.content.models.ReactionTypeCount;
-import com.trecapps.sm.content.pipeline.IEventInitiator;
+//import com.trecapps.sm.content.pipeline.IEventInitiator;
 import com.trecapps.sm.content.repos.ReactionRepo;
+import com.trecauth.common.model.AccountList;
+import com.trecauth.common.model.UserAccount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +31,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -42,23 +43,22 @@ public class ReactionService {
     @Autowired
     ContentService contentService;
 
-    @Autowired(required = false)
-    IEventInitiator eventInitiator;
+//    @Autowired(required = false)
+//    IEventInitiator eventInitiator;
 
     @Value("#{'${trecapps.sm.reaction-types}'.split(',')}")
     List<String> reactionTypes;
 
     public Mono<ResponseObj> postReaction(
-            TcUser user,
-            TcBrands brands,
-            String contentId,
+            AccountList list,
+            UUID contentId,
             ReactionPosting reactionPosting
 
     ) {
         if(!reactionTypes.contains(reactionPosting.getReactType()))
             return Mono.just(ResponseObj.getInstance(HttpStatus.BAD_REQUEST, "Type is not supported on this platform!"));
 
-        return contentService.getPosting(user, brands, contentId)
+        return contentService.getPosting(list, contentId)
                 .map((ResponseObj responseObj) -> {
                     if(responseObj.getStatus() != 200)
                     {
@@ -71,7 +71,7 @@ public class ReactionService {
 
                     AtomicBoolean isNew = new AtomicBoolean(false);
 
-                    return reactionRepo.findByContentAndUserId(contentId, user.getId())
+                    return reactionRepo.findByContentAndUserId(contentId, list.getMainUserAccount().getId())
                             .doOnNext((ReactionEntry entity) -> {
                                 reactionRepo.delete(entity);
                                 isNew.set(true);
@@ -89,45 +89,45 @@ public class ReactionService {
                 .flatMap((ReactionEntry entity) -> {
                     ReactionId reactionId = new ReactionId();
                     reactionId.setContentId(contentId);
-                    reactionId.setUserId(user.getId());
+                    reactionId.setUserAccountId(list.getMainUserAccount().getId());
                     reactionId.setType(reactionPosting.getReactType());
 
                     entity.setReactionId(reactionId);
                     entity.setMade(OffsetDateTime.now());
                     entity.setPrivate(reactionPosting.isMakePrivate());
-                    entity.setBrandId(brands == null ? null : brands.getId());
+                    entity.setAccountId(list.getCurrentAccount().getId());
 
                     return reactionRepo.save(entity);
                 })
                 .doOnNext((ReactionEntry entity) -> {
-                    if(eventInitiator == null || !entity.isNew()) {
-                        // we only care about new reactions (and if the event initiator is available)
-                        return;
-                    }
-                    SocialMediaEvent event = new SocialMediaEvent();
-//                    event.setUserId(entity.getUserId());
-                    event.setResourceId(entity.getReactionId().getContentId());
-                    event.setModule(entity.getModuleId());
-                    String parent = entity.getContentParent();
-                    if(parent == null){
-                        event.setType(SocialMediaEventType.POST_REACTION);
-                    } else {
-                        event.setType(SocialMediaEventType.COMMENT_REACTION);
-                        event.setPostId(parent);
-                    }
-
-                    event.setProfile(ProfileFunctionality.getProfileId(entity.getReactionId().getUserId(), entity.getBrandId()));
-
-                    eventInitiator.sendEvent(event).subscribe();
+//                    if(eventInitiator == null || !entity.isNew()) {
+//                        // we only care about new reactions (and if the event initiator is available)
+//                        return;
+//                    }
+//                    SocialMediaEvent event = new SocialMediaEvent();
+////                    event.setUserId(entity.getUserId());
+//                    event.setResourceId(entity.getReactionId().getContentId());
+//                    event.setModule(entity.getModuleId());
+//                    String parent = entity.getContentParent();
+//                    if(parent == null){
+//                        event.setType(SocialMediaEventType.POST_REACTION);
+//                    } else {
+//                        event.setType(SocialMediaEventType.COMMENT_REACTION);
+//                        event.setPostId(parent);
+//                    }
+//
+//                    event.setProfile(ProfileFunctionality.getProfileId(entity.getReactionId().getUserId(), entity.getBrandId()));
+//
+//                    eventInitiator.sendEvent(event).subscribe();
 
                 })
                 .flatMap((ReactionEntry entity) -> {
-                    return getReactionCount(user, contentId);
+                    return getReactionCount(list.getMainUserAccount(), contentId);
                 });
     }
 
 
-    public Mono<ResponseObj> getReactionCount(TcUser user, String contentId) {
+    public Mono<ResponseObj> getReactionCount(UserAccount user, UUID contentId) {
         return reactionRepo.findCountByContentId(contentId)
 //                .collectList()
                 .map((List<ReactionTypeCount> reactionList) -> {
@@ -159,7 +159,7 @@ public class ReactionService {
                 .defaultIfEmpty(ResponseObj.getInstanceNOTFOUND("Content Not Found!"));
     }
 
-    public Mono<ResponseObj> removeReaction(TcUser user, String contentId) {
+    public Mono<ResponseObj> removeReaction(UserAccount user, UUID contentId) {
         return reactionRepo.findByContentAndUserId(contentId, user.getId())
                 .doOnNext((ReactionEntry entity) -> {
                     reactionRepo.delete(entity);
@@ -177,14 +177,13 @@ public class ReactionService {
     }
 
     public Mono<List<ContentReactionEntry>> getContentReactionListByContentId(
-            TcUser user,
-            TcBrands brands,
-            String contentId,
+            AccountList list,
+            UUID contentId,
             String type,
             int page,
             int size
     ) {
-        return contentService.getPosting(user, brands, contentId)
+        return contentService.getPosting(list, contentId)
                 .flatMap((ResponseObj obj) -> {
                     if(obj.getStatus() != 200)
                     {
@@ -202,14 +201,12 @@ public class ReactionService {
                     return entities.stream()
                             .map((ReactionEntry entity) -> {
                                 ContentReactionEntry reactionEntry = new ContentReactionEntry();
-                                reactionEntry.setMade(entity.getMade().atOffset(ZoneOffset.UTC));
+                                reactionEntry.setMade(entity.getMade());
                                 reactionEntry.setType(entity.getReactionId().getType());
 
 
                                 reactionEntry.setProfileId
-                                        (ProfileFunctionality.getProfileId(
-                                                entity.getReactionId().getUserId(),
-                                                entity.getBrandId()));
+                                        (list.getCurrentAccount().getId());
                                 return reactionEntry;
 
                             }).toList();
@@ -217,7 +214,7 @@ public class ReactionService {
 
     }
 
-    public Mono<List<ProfileReactionEntry>> getSelfReactions(TcUser user, int page, int size) {
+    public Mono<List<ProfileReactionEntry>> getSelfReactions(UserAccount user, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return reactionRepo.findByUserId(user.getId(), pageable)
                 .map((ReactionEntry entity) -> {
@@ -227,7 +224,7 @@ public class ReactionService {
                     ret.setType(entity.getReactionId().getType());
                     ret.setPrivate(entity.isPrivate());
                     ret.setContentId(entity.getReactionId().getContentId());
-                    ret.setBrandId(entity.getBrandId());
+                    ret.setBrandId(entity.getAccountId());
                     ret.setMade(entity.getMade().atOffset(ZoneOffset.UTC));
                     ret.setStale(entity.isStale());
                     ret.setVersion(entity.getVersion());

@@ -15,8 +15,8 @@ import java.util.UUID;
 public class ReactionEntry {
 
     transient boolean isNew = false;
-    transient String contentParent = null;
-    transient String moduleId = null;
+    transient UUID contentParent = null;
+    transient UUID moduleId = null;
 
     @PrimaryKey
     ReactionId reactionId;
