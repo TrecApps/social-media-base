@@ -92,8 +92,8 @@ public class SocialMediaEventHandler implements IEventHandler {
                         MediaEventId eventId = new MediaEventId();
                         eventId.setAdded(Instant.now());
                         eventId.setCategory("Following");
-                        eventId.setProfile(list.getId());
-                        eventId.setRandomId(UUID.randomUUID().toString());
+                        eventId.setAccount(list.getId());
+                        eventId.setRandomId(UUID.randomUUID());
 
                         event.setId(eventId);
 
@@ -143,8 +143,8 @@ public class SocialMediaEventHandler implements IEventHandler {
                         MediaEventId eventId = new MediaEventId();
                         eventId.setAdded(Instant.now());
                         eventId.setCategory("Following");
-                        eventId.setProfile(list.getId());
-                        eventId.setRandomId(UUID.randomUUID().toString());
+                        eventId.setAccount(list.getId());
+                        eventId.setRandomId(UUID.randomUUID());
 
                         event.setId(eventId);
 

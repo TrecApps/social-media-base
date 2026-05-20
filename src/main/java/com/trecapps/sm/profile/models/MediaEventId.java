@@ -16,7 +16,7 @@ public class MediaEventId {
 
     @PrimaryKeyColumn(type = PrimaryKeyType.PARTITIONED)
     @Column("account_id")
-    String account;
+    UUID account;
 
 
     @PrimaryKeyColumn(type = PrimaryKeyType.CLUSTERED, ordinal = 1)

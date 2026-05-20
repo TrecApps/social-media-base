@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class HomePageManagementService {
@@ -21,7 +22,7 @@ public class HomePageManagementService {
     @Autowired
     MediaEventRepo mediaEventRepo;
 
-    public Mono<ProfileFilterList> getFilterList(String profileId){
+    public Mono<ProfileFilterList> getFilterList(UUID profileId){
         return profileFilterRepo.findById(profileId)
                 .defaultIfEmpty(new ProfileFilterList())
                 .doOnNext((ProfileFilterList list) -> {
@@ -29,7 +30,7 @@ public class HomePageManagementService {
                 });
     }
 
-    public Mono<ResponseObj> addOrUpdateFilter(String profileId, PostFilterRequest request){
+    public Mono<ResponseObj> addOrUpdateFilter(UUID profileId, PostFilterRequest request){
         return getFilterList(profileId)
                 .doOnNext((ProfileFilterList list) -> {
                     list.updateFilter(request);
@@ -37,7 +38,7 @@ public class HomePageManagementService {
                 .thenReturn(ResponseObj.getInstanceOK("Filters Updated"));
     }
 
-    public Mono<ResponseObj> removeFilter(String profileId, PostFilterRequest request){
+    public Mono<ResponseObj> removeFilter(UUID profileId, PostFilterRequest request){
         return getFilterList(profileId)
                 .doOnNext((ProfileFilterList list) -> {
                     list.removeFilter(request);
