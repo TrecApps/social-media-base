@@ -60,7 +60,8 @@ dependencies {
 
     // Azure Logging
     implementation "com.microsoft.azure:applicationinsights-runtime-attach:3.7.6"
-    implementation "com.azure.spring:spring-cloud-azure-starter-keyvault:7.1.0"
+    implementation "com.azure.spring:spring-cloud-azure-starter-keyvault"
+    implementation 'com.azure:azure-messaging-servicebus'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
