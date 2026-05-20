@@ -1,19 +1,14 @@
 package com.trecapps.sm.profile.controllers;
 
-import com.trecapps.auth.common.models.TcBrands;
-import com.trecapps.auth.common.models.TcUser;
-import com.trecapps.auth.common.models.TrecAuthentication;
-import com.trecapps.auth.webflux.services.IUserStorageServiceAsync;
-import com.trecapps.sm.common.functionality.ObjectResponseException;
+import com.trecapps.sm.common.models.ObjectResponseException;
 import com.trecapps.sm.common.models.ResponseObj;
-import com.trecapps.sm.profile.dto.Favorite;
-import com.trecapps.sm.profile.dto.PostProfile;
-import com.trecapps.sm.profile.dto.ProfileSearchResult;
-import com.trecapps.sm.profile.dto.SkillPost;
+import com.trecapps.sm.profile.dto.*;
 import com.trecapps.sm.profile.models.Education;
 import com.trecapps.sm.profile.models.Profile;
 import com.trecapps.sm.profile.models.WorkExpHolder;
-import com.trecapps.sm.profile.service.ProfileService;
+import com.trecapps.sm.profile.services.ProfileService;
+import com.trecauth.common.model.AccountList;
+import com.trecauth.common.model.TrecauthAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/Profile")
@@ -34,8 +29,6 @@ public class ProfileController {
     @Autowired
     ProfileService profileService;
 
-    @Autowired
-    IUserStorageServiceAsync userStorageService;
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -49,28 +42,11 @@ public class ProfileController {
             @RequestParam(value = "brandId",defaultValue = "") String brandId,
             @RequestBody PostProfile postProfile
             ){
-        return Mono.just((TrecAuthentication)authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
+        return Mono.just((TrecauthAuthentication)authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    AccountList list = trecAuthentication.getList();
 
-                    Mono<ResponseObj> ret;
-
-                    if(!brandId.trim().isEmpty()){
-                        if(!user.getBrands().contains(brandId))
-                            throw new ObjectResponseException(HttpStatus.FORBIDDEN, "Brand does not belong to you!");
-
-                        ret = userStorageService
-                                .getBrandById(brandId)
-                                .flatMap((Optional<TcBrands> oBrands) -> {
-                                    if(oBrands.isEmpty())
-                                        throw new ObjectResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Brand Account not Found!");
-                                    return profileService.createProfile(user, oBrands.get(), postProfile);
-                                });
-                    } else {
-                        ret = profileService.createProfile(user, brands, postProfile);
-                    }
-                    return ret;
+                    return profileService.createProfile(list, postProfile);
                 })
                 .onErrorResume(ObjectResponseException.class, (ObjectResponseException o) -> Mono.just(o.toResponseObj()))
                 // ToDo - Handle Unexpected error
@@ -84,36 +60,22 @@ public class ProfileController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    return profileService.searchProfiles(user.getId(), query, page, size);
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    return profileService.searchProfiles(trecAuthentication.getList(), query, page, size);
                 });
     }
 
     @GetMapping("/id/{id}")
     Mono<ResponseEntity<Profile>> getProfile(
             Authentication authentication,
-            @PathVariable String id
+            @PathVariable UUID id
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
 
-                    String[] idComponents = id.split("-", 2);
-                    if(idComponents.length != 2)
-                        throw new ObjectResponseException(HttpStatus.BAD_REQUEST, "invalid id format");
-                    if(idComponents[1].length() == 32){
-                        idComponents[1] =
-                                idComponents[1].substring(0, 8) + "-" +
-                                        idComponents[1].substring(8, 12) + "-" +
-                                        idComponents[1].substring(12, 16) + "-" +
-                                        idComponents[1].substring(16, 20) + "-" +
-                                        idComponents[1].substring(20);
-                    }
 
-                    return profileService.getProfile(user, brands == null ? null : brands.getId(), String.join("-", idComponents));
+                    return profileService.getProfile(trecAuthentication.getList(), id);
                 })
                 .map(ResponseEntity::ok)
                 .onErrorResume(ObjectResponseException.class, (ObjectResponseException o) -> Mono.just(new ResponseEntity<>(o.getStatus())));
@@ -122,13 +84,12 @@ public class ProfileController {
     @GetMapping("/basic/{id}")
     Mono<ResponseEntity<BasicProfile>> getBasicProfile(
             Authentication authentication,
-            @PathVariable String id
+            @PathVariable UUID id
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    return profileService.getProfile(user, brands == null ? null : brands.getId(), id);
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+
+                    return profileService.getProfile(trecAuthentication.getList(), id);
                 })
                 .map(BasicProfile::getInstance)
                 .map(ResponseEntity::ok)
@@ -140,11 +101,9 @@ public class ProfileController {
             Authentication authentication,
             @RequestBody List<Favorite> favorites
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    return profileService.updateFavorites(user.getId(), brands == null ? null : brands.getId(), favorites);
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    return profileService.updateFavorites(trecAuthentication.getList(), favorites);
                 })
                 .map(ResponseEntity::ok);
     }
@@ -159,18 +118,16 @@ public class ProfileController {
             String id,
             boolean isDeleting
     ) {
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
                     Mono<ResponseObj> ret;
 
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    String brandId = brands == null ? null : brands.getId();
+                    AccountList list = trecAuthentication.getList();
 
 
                         ret = isDeleting ?
-                                profileService.removeEducation(user.getId(), brandId, id) :
-                                profileService.setEducation(user.getId(), brandId, id, educationObject);
+                                profileService.removeEducation(list, id) :
+                                profileService.setEducation(list, id, educationObject);
                     return ret;
                 })
                 .map(ResponseObj::toEntity);
@@ -208,18 +165,16 @@ public class ProfileController {
             String id,
             boolean isDeleting
     ) {
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
                     Mono<ResponseObj> ret;
 
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    String brandId = brands == null ? null : brands.getId();
+                    AccountList list = trecAuthentication.getList();
 
 
                     ret = isDeleting ?
-                            profileService.removeWorkExperience(user.getId(), brandId, id) :
-                            profileService.setWorkExperience(user.getId(), brandId, id, workExpHolder);
+                            profileService.removeWorkExperience(list, id) :
+                            profileService.setWorkExperience(list, id, workExpHolder);
                     return ret;
                 })
                 .map(ResponseObj::toEntity);
@@ -257,13 +212,11 @@ public class ProfileController {
             @RequestBody SkillPost skillPost,
             @PathVariable String name
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    String brandId = brands == null ? null : brands.getId();
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    AccountList list = trecAuthentication.getList();
 
-                    return profileService.setSkill(user.getId(), brandId, name, skillPost);
+                    return profileService.setSkill(list, name, skillPost);
                 })
                 .map(ResponseObj::toEntity);
     }
@@ -273,13 +226,11 @@ public class ProfileController {
             Authentication authentication,
             @PathVariable String name
     ){
-        return Mono.just((TrecAuthentication) authentication)
-                .flatMap((TrecAuthentication trecAuthentication) -> {
-                    TcUser user = trecAuthentication.getUser();
-                    TcBrands brands = trecAuthentication.getBrand();
-                    String brandId = brands == null ? null : brands.getId();
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    AccountList list = trecAuthentication.getList();
 
-                    return profileService.removeSkill(user.getId(), brandId, List.of(name));
+                    return profileService.removeSkill(list, List.of(name));
                 })
                 .map(ResponseObj::toEntity);
     }

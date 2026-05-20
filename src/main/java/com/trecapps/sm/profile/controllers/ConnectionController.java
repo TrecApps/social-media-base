@@ -1,11 +1,10 @@
 package com.trecapps.sm.profile.controllers;
 
-import com.trecapps.auth.common.models.TrecAuthentication;
-import com.trecapps.sm.common.functionality.ProfileFunctionality;
 import com.trecapps.sm.common.models.ResponseObj;
 import com.trecapps.sm.profile.models.ConnectionEntry;
 import com.trecapps.sm.profile.models.ProfileConnections;
-import com.trecapps.sm.profile.service.ConnectionsService;
+import com.trecapps.sm.profile.services.ConnectionsService;
+import com.trecauth.common.model.TrecauthAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/Connections")
@@ -24,12 +24,11 @@ public class ConnectionController {
     @GetMapping("/follow")
     Mono<ResponseEntity<ResponseObj>> follow(
             Authentication authentication,
-            @RequestParam String profileId
+            @RequestParam UUID profileId
     ) {
-        TrecAuthentication trecAuthentication = (TrecAuthentication) authentication;
+        TrecauthAuthentication trecAuthentication = (TrecauthAuthentication) authentication;
         return connectionsService.attemptFollow(
-                trecAuthentication.getUser(),
-                trecAuthentication.getBrand(),
+                trecAuthentication.getList(),
                 profileId
         ).map(ResponseObj::toEntity);
     }
@@ -37,11 +36,11 @@ public class ConnectionController {
     @GetMapping("/with/{id}")
     Mono<ResponseEntity<ProfileConnections>> with(
             Authentication authentication,
-            @PathVariable String id
+            @PathVariable UUID id
     ) {
-        TrecAuthentication trecAuthentication = (TrecAuthentication) authentication;
+        TrecauthAuthentication trecAuthentication = (TrecauthAuthentication) authentication;
         return connectionsService.getTwoWayConnection(
-                ProfileFunctionality.getProfileId(trecAuthentication.getUser(), trecAuthentication.getBrand()),
+                trecAuthentication.getList().getCurrentAccount().getId(),
                 id
         ).map(ResponseEntity::ok);
     }
@@ -49,11 +48,11 @@ public class ConnectionController {
     @GetMapping("/approve")
     Mono<ResponseEntity<ResponseObj>> approveFollow(
             Authentication authentication,
-            @RequestParam String profileId
+            @RequestParam UUID profileId
     ) {
-        TrecAuthentication trecAuthentication = (TrecAuthentication) authentication;
+        TrecauthAuthentication trecAuthentication = (TrecauthAuthentication) authentication;
         return connectionsService.approveRequest(
-                trecAuthentication.getUser(),
+                trecAuthentication.getList(),
                 profileId
         ).map(ResponseObj::toEntity);
     }
@@ -61,12 +60,11 @@ public class ConnectionController {
     @GetMapping("/unfollow")
     Mono<ResponseEntity<ResponseObj>> unfollow(
             Authentication authentication,
-            @RequestParam String profileId
+            @RequestParam UUID profileId
     ) {
-        TrecAuthentication trecAuthentication = (TrecAuthentication) authentication;
+        TrecauthAuthentication trecAuthentication = (TrecauthAuthentication) authentication;
         return connectionsService.unfollow(
-                trecAuthentication.getUser(),
-                trecAuthentication.getBrand(),
+                trecAuthentication.getList(),
                 profileId
         ).map(ResponseObj::toEntity);
     }
@@ -78,10 +76,9 @@ public class ConnectionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size
     ) {
-        TrecAuthentication trecAuthentication = (TrecAuthentication) authentication;
+        TrecauthAuthentication trecAuthentication = (TrecauthAuthentication) authentication;
         return connectionsService.findMyConnections(
-                trecAuthentication.getUser(),
-                trecAuthentication.getBrand(),
+                trecAuthentication.getList(),
                 page, size,
                 "followers".equals(getType)
         );
