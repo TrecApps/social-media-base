@@ -16,10 +16,10 @@ import org.springframework.web.reactive.config.EnableWebFlux;
         "com.trecauth.webflux.*",
         "${trecapps.sm.mode}"
 })
-@EnableReactiveMongoRepositories({
+@EnableReactiveMongoRepositories(basePackages = {
         "com.trecapps.sm.content.repos",
         "com.trecapps.sm.profile.repos"
-})
+}, reactiveMongoTemplateRef = "trecappsSMMongoTemplate")
 @EnableWebFlux
 @Configuration
 public class BaseMicroDriver {

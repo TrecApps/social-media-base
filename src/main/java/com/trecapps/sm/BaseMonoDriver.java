@@ -12,13 +12,16 @@ import org.springframework.web.reactive.config.EnableWebFlux;
         "com.trecapps.sm.common.*",                     // Scan this app
 
         "com.trecapps.sm.common",
-        "com.trecapps.auth.common.*",               // Authentication library
-        "com.trecapps.auth.webflux.*",
+        "com.trecauth.common.*",               // Authentication library
+        "com.trecauth.webflux.*",
         "com.trecapps.sm.profile.*",                // Enable Profile Features
         "com.trecapps.sm.content",                   // Enable Content Features
         "com.trecapps.sm.content.*"
 })
-@EnableReactiveMongoRepositories
+@EnableReactiveMongoRepositories(basePackages = {
+        "com.trecapps.sm.content.repos",
+        "com.trecapps.sm.profile.repos"
+}, reactiveMongoTemplateRef = "trecappsSMMongoTemplate")
 @EnableWebFlux
 public class BaseMonoDriver {
     public static void main(String[] args) {
