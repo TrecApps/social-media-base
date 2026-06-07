@@ -37,7 +37,7 @@ public class MongoSMUrlConfiguration {
         return new SimpleReactiveMongoDatabaseFactory(client, database);
     }
 
-    @Bean
+    @Bean(name="trecappsSMMongoTemplate")
     public ReactiveMongoTemplate trecappsSMMongoTemplate(
             @Qualifier("trecappsSMMongoFactory") ReactiveMongoDatabaseFactory factory
     ) {

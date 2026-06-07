@@ -27,11 +27,11 @@ repositories {
     mavenCentral()
 
     maven {
-        url trecappsUrl
-        name 'TcMavenRepo'
+        url azureRepoUrl
+        name 'tcMavenRepo'
         credentials {
-            username trecappsRepoUsername
-            password trecappsRepoPassword
+            username azureRepoUsername
+            password azureRepoPassword
         }
     }
 }
@@ -46,9 +46,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // Basic Security help
-    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-azure', version: '0.0.51')
-    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-core', version: '0.0.51')
-    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-mongo', version: '0.0.51')
+    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-azure', version: '0.0.53')
+    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-core', version: '0.0.53')
+    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-mongo', version: '0.0.53')
 
     implementation "org.springframework.boot:spring-boot-starter-security"
     implementation("org.springframework.boot:spring-boot-starter-webflux")
