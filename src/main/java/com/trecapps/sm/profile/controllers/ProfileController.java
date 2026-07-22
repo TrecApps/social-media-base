@@ -29,7 +29,6 @@ public class ProfileController {
     @Autowired
     ProfileService profileService;
 
-
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handle(HttpMessageNotReadableException e) {

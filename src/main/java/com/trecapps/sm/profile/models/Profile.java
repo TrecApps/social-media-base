@@ -18,7 +18,7 @@ import java.util.UUID;
 public class Profile {
 
     @MongoId
-    UUID id;  // Prefix should be "User-" or "Brand-" and the UUID of the user/brand
+    UUID id;
 
     AccountType profileType; // Whether this is a user or brand account
 
