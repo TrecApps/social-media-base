@@ -48,7 +48,7 @@ public class HomePageManagementService {
 
 
 
-    public Mono<List<SocialMediaEvent>> getHomePageEvents(String profileId, String category, int page, int size){
+    public Mono<List<SocialMediaEvent>> getHomePageEvents(UUID profileId, String category, int page, int size){
         return mediaEventRepo.getEventsByProfileAndCategory(profileId, category, page, size).collectList();
     }
 
