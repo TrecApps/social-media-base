@@ -15,7 +15,7 @@ import java.util.UUID;
 @Repository
 public interface MediaEventRepo extends ReactiveCassandraRepository<SocialMediaEvent, MediaEventId> {
 
-    @Query("select * from social_media_event where profile_id = :profileId and category = :category")
+    @Query("select * from social_media_event where account_id = :profileId and category = :category")
     Flux<SocialMediaEvent> getEventsByProfileAndCategory(UUID profileId, String category, Pageable page);
 
     default Flux<SocialMediaEvent> getEventsByProfileAndCategory(UUID profileId, String category, int page, int pageSize){

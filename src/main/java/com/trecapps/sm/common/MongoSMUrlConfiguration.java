@@ -13,6 +13,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.mongodb.ReactiveMongoDatabaseFactory;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.SimpleReactiveMongoDatabaseFactory;
@@ -22,7 +24,11 @@ import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
-import java.util.Collections;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static org.springframework.data.mongodb.core.ReactiveMongoTemplate.NO_OP_REF_RESOLVER;
 
@@ -51,9 +57,38 @@ public class MongoSMUrlConfiguration {
         return new SimpleReactiveMongoDatabaseFactory(client, database);
     }
 
+    public List<Converter<?, ?>> customConversions() {
+        List<Converter<?, ?>> converterList = new ArrayList<Converter<?, ?>>();
+        converterList.add(new MongoLocalDateTimeFromStringConverter());
+        converterList.add(new OffsetDateTimeWriteConverter());
+        converterList.add(new OffsetDateTimeReadConverter());
+        return converterList;
+    }
+
+    public static class OffsetDateTimeWriteConverter implements Converter<OffsetDateTime, Date> {
+        @Override
+        public Date convert(OffsetDateTime source) {
+            return Date.from(source.toInstant());
+        }
+    }
+
+    private static final class MongoLocalDateTimeFromStringConverter implements Converter<String, OffsetDateTime> {
+        @Override
+        public OffsetDateTime convert(String source) {
+            return source == null ? null : OffsetDateTime.parse(source);
+        }
+    }
+
+    public static class OffsetDateTimeReadConverter implements Converter<Date, OffsetDateTime> {
+        @Override
+        public OffsetDateTime convert(Date source) {
+            return source.toInstant().atOffset(ZoneOffset.UTC);
+        }
+    }
+
     private MappingMongoConverter getDefaultMongoConverter(ReactiveMongoDatabaseFactory factory) {
 
-        MongoCustomConversions conversions = new MongoCustomConversions(Collections.emptyList());
+        MongoCustomConversions conversions = new MongoCustomConversions(customConversions());
 
         MongoMappingContext context = mongoMappingContext();
         context.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
