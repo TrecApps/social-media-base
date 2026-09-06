@@ -12,6 +12,10 @@ dependencyManagement {
     }
 }
 
+springBoot {
+    mainClass = 'com.trecapps.sm.BaseMonoDriver'
+}
+
 //ext {
 //    springbootVersion = '4.0.0'
 //}
