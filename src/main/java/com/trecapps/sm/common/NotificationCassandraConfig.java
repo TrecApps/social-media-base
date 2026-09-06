@@ -57,6 +57,9 @@ public class NotificationCassandraConfig extends AbstractCassandraConfiguration 
     @Value("${java.cacerts.pw:changeit")
     String sslKeyStorePassword;
 
+    @Value("${java.home.var:JAVA_HOME}")
+    String javaHome;
+
 
     @Override
     protected String getKeyspaceName() {
@@ -83,9 +86,9 @@ public class NotificationCassandraConfig extends AbstractCassandraConfiguration 
 
     void prepKeyStore() throws Exception {
         if(sslKeyStoreFile != null) return;
-        String javaHomeDirectory = System.getenv("JAVA_HOME");
+        String javaHomeDirectory = System.getenv(this.javaHome);
         if (javaHomeDirectory == null || javaHomeDirectory.isEmpty()) {
-            throw new Exception("JAVA_HOME not set");
+            throw new Exception(String.format("%s not set", this.javaHome));
         }
         String ssl_keystore_file_path = javaHomeDirectory + cacertsLoc;
 
