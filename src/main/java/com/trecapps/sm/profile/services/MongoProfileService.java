@@ -2,10 +2,7 @@ package com.trecapps.sm.profile.services;
 
 import com.trecapps.sm.common.models.ObjectResponseException;
 import com.trecapps.sm.common.models.ResponseObj;
-import com.trecapps.sm.profile.dto.Favorite;
-import com.trecapps.sm.profile.dto.PostProfile;
-import com.trecapps.sm.profile.dto.ProfileSearchResult;
-import com.trecapps.sm.profile.dto.SkillPost;
+import com.trecapps.sm.profile.dto.*;
 import com.trecapps.sm.profile.models.Education;
 import com.trecapps.sm.profile.models.Profile;
 import com.trecapps.sm.profile.models.Skill;
@@ -23,9 +20,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class MongoProfileService implements ProfileService {
@@ -335,5 +330,34 @@ public class MongoProfileService implements ProfileService {
                 // ToDo - handle Blank Exceptions
 
                 ;
+    }
+
+    @Override
+    public Mono<Map<UUID, BasicProfile>> retrieveUsersProfiles(AccountList list) {
+        return Mono.just(list)
+                .map((AccountList list1) -> {
+                    List<UUID> profileIds = list
+                            .getBrandAccounts()
+                            .stream()
+                            .filter((Account a) -> {
+                                AccountType type = a.getType();
+                                return AccountType.BRAND.equals(type) || AccountType.USER.equals(type);
+                            })
+                            .map(Account::getId)
+                            .toList();
+                    return profileIds;
+                })
+                .flatMap((List<UUID> ids) -> {
+                    return this.profileRepo.findAllById(ids)
+                            .map(BasicProfile::getInstance)
+                            .collectList();
+                })
+                .map((List<BasicProfile> basicProfiles) -> {
+                    Map<UUID, BasicProfile> ret = new HashMap<>();
+                    basicProfiles.forEach((BasicProfile bp) -> {
+                       ret.put(bp.getId(), bp);
+                    });
+                    return ret;
+                });
     }
 }

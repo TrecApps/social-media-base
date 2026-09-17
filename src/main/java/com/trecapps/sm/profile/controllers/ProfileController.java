@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -50,6 +51,14 @@ public class ProfileController {
                 .onErrorResume(ObjectResponseException.class, (ObjectResponseException o) -> Mono.just(o.toResponseObj()))
                 // ToDo - Handle Unexpected error
                 .map(ResponseObj::toEntity);
+    }
+
+    @GetMapping("/byUser")
+    Mono<Map<UUID, BasicProfile>> getProfilesByUser(Authentication authentication) {
+        return Mono.just((TrecauthAuthentication) authentication)
+                .flatMap((TrecauthAuthentication trecAuthentication) -> {
+                    return profileService.retrieveUsersProfiles(trecAuthentication.getList());
+                });
     }
 
     @GetMapping("/search")

@@ -1,10 +1,7 @@
 package com.trecapps.sm.profile.services;
 
 import com.trecapps.sm.common.models.ResponseObj;
-import com.trecapps.sm.profile.dto.Favorite;
-import com.trecapps.sm.profile.dto.PostProfile;
-import com.trecapps.sm.profile.dto.ProfileSearchResult;
-import com.trecapps.sm.profile.dto.SkillPost;
+import com.trecapps.sm.profile.dto.*;
 import com.trecapps.sm.profile.models.Education;
 import com.trecapps.sm.profile.models.Profile;
 import com.trecapps.sm.profile.models.WorkExpHolder;
@@ -14,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface ProfileService {
@@ -38,6 +36,7 @@ public interface ProfileService {
 
     Mono<ResponseObj> removeSkill(AccountList list, @NotNull List<String> names);
 
+    Mono<Map<UUID, BasicProfile>> retrieveUsersProfiles(AccountList list);
 
 
 }
