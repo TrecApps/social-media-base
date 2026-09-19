@@ -50,8 +50,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
     // Basic Security help
-    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-azure', version: '0.0.61')
-    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-mongo', version: '0.0.61')
+    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-azure', version: '0.0.64')
+    implementation(group: 'com.trecapps.trecauth', name: 'trec-auth-mongo', version: '0.0.64')
 
     implementation "org.springframework.boot:spring-boot-starter-security"
     implementation("org.springframework.boot:spring-boot-starter-webflux")
