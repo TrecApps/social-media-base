@@ -8,7 +8,7 @@ plugins {
 
 dependencyManagement {
     imports {
-        mavenBom("com.azure.spring:spring-cloud-azure-dependencies:7.0.0")
+        mavenBom("com.azure.spring:spring-cloud-azure-dependencies:7.4.0")
     }
 }
 
@@ -45,13 +45,13 @@ jar{
     enabled = false
 }
 
-configurations.configureEach {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'io.netty') {
-            details.useVersion '4.1.100.Final'
-        }
-    }
-}
+//configurations.configureEach {
+//    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+//        if (details.requested.group == 'io.netty') {
+//            details.useVersion '4.1.100.Final'
+//        }
+//    }
+//}
 
 dependencies {
     implementation 'org.projectlombok:lombok:1.18.48'
@@ -69,7 +69,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-cassandra-reactive" // Connections and Reactions
     implementation "org.springframework.boot:spring-boot-starter-aspectj"
 
-    implementation 'org.springframework:spring-web'
+//    implementation 'org.springframework:spring-web'
     // Azure Logging
     implementation "com.microsoft.azure:applicationinsights-runtime-attach:3.7.6"
     implementation "com.azure.spring:spring-cloud-azure-starter-keyvault"
