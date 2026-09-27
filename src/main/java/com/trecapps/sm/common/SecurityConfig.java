@@ -36,7 +36,8 @@ public class SecurityConfig {
             "/Reactions/*",
             "/Reactions/**",
             "/Connections/**",
-            "/Connections/*"
+            "/Connections/*",
+            "/Home/**"
     };
 
     @Bean
