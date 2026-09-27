@@ -61,6 +61,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-cassandra-reactive" // Connections and Reactions
     implementation "org.springframework.boot:spring-boot-starter-aspectj"
 
+    implementation 'org.springframework:spring-web'
     // Azure Logging
     implementation "com.microsoft.azure:applicationinsights-runtime-attach:3.7.6"
     implementation "com.azure.spring:spring-cloud-azure-starter-keyvault"
